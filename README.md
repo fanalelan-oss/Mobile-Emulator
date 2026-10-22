@@ -5,11 +5,17 @@
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Electron](https://img.shields.io/badge/Electron-v33.0.0-47848F?logo=electron&logoColor=white)
 ![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?logo=windows&logoColor=white)
-![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
+![Release](https://img.shields.io/github/v/release/fanalelan-oss/Mobile-Emulator?color=brightgreen&label=Latest%20Version)
+
+<br/>
+
+[![Download for Windows](https://img.shields.io/badge/📥_Download_for_Windows-Setup.exe-2ea44f?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/fanalelan-oss/Mobile-Emulator/releases/latest)
+
+<br/>
 
 **محاكي جوال تفاعلي خفيف وسريع لمعاينة المنافذ المحلية (Localhost) وتطوير المواقع وتطبيقات الويب المتجاوبة داخل أطر أجهزة ذكية واقعية.**
 
-[المميزات](#-المميزات-الرئيسية) • [طريقة التثبيت](#-طريقة-التثبيت-والتشغيل) • [أنواع الأجهزة المدعومة](#-الأجهزة-المدعومة) • [اختصارات لوحة المفاتيح](#-اختصارات-سريعة) • [المساهمة والترخيص](#-الترخيص)
+[تحميل البرنامج](#-التنزيل-المباشر-للمستخدمين) • [المميزات](#-المميزات-الرئيسية) • [طريقة التثبيت للمطورين](#-طريقة-التثبيت-والتشغيل-للمطورين) • [الأجهزة المدعومة](#-الأجهزة-المدعومة) • [اختصارات لوحة المفاتيح](#-اختصارات-سريعة)
 
 </div>
 
@@ -77,7 +83,16 @@
 
 ---
 
-## 🚀 طريقة التثبيت والتشغيل (Getting Started)
+## 📥 التنزيل المباشر للمستخدمين (Quick Download)
+
+إذا كنت ترغب فقط في استخدام البرنامج دون الحاجة لأدوات برمجة:
+1. توجه إلى صفحة **[أحدث الإصدارات (Releases)](https://github.com/fanalelan-oss/Mobile-Emulator/releases/latest)**.
+2. حمّل ملف التثبيت المباشر: **`MobileEmulator Setup 1.0.0.exe`**.
+3. قم بتشغيل الملف وسيتم تثبيت المحاكي وإنشاء اختصار تلقائي على سطح المكتب!
+
+---
+
+## 🚀 طريقة التثبيت والتشغيل للمطورين (For Developers)
 
 ### المتطلبات الأساسية
 - تأكد من تثبيت [Node.js](https://nodejs.org/) (الإصدار 18 أو أحدث).
