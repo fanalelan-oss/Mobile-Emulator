@@ -1,0 +1,51 @@
+{
+  "name": "mobile-emulator",
+  "version": "1.0.0",
+  "description": "محاكي جوال تفاعلي خفيف لمعاينة المنافذ المحلية وتطوير الويب المتجاوب",
+  "main": "main.js",
+  "author": "Fan Alelan <fanalelan@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fanalelan-oss/Mobile-Emulator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/fanalelan-oss/Mobile-Emulator/issues"
+  },
+  "homepage": "https://github.com/fanalelan-oss/Mobile-Emulator#readme",
+  "keywords": [
+    "mobile-simulator",
+    "mobile-emulator",
+    "responsive-design",
+    "electron",
+    "localhost-preview",
+    "web-development",
+    "device-mockup"
+  ],
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "oss.fanalelan.mobileemulator",
+    "productName": "MobileEmulator",
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "محاكي الجوال"
+    }
+  }
+}

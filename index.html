@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>محاكي الجوال</title>
+<style>
+:root{--card:#fff;--line:#e6e9f0;--txt:#1f2633;--mute:#7a8396;--acc:#4f7cff;--acc2:#eef3ff;--body:#1c1f26}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:transparent;height:100%;overflow:hidden;font-family:"Segoe UI",Tahoma,sans-serif;color:var(--txt);user-select:none}
+.wrap{display:flex;direction:ltr;align-items:center;gap:8px;padding:8px;height:100%}
+
+/* phone frame */
+.phone{position:relative;background:var(--body);border-radius:46px;padding:12px;-webkit-app-region:drag;
+ box-shadow:0 0 0 2px #3a3f4b inset,0 10px 30px rgba(0,0,0,.35);flex:none;transition:border-radius .2s,padding .2s}
+.phone.tablet{border-radius:26px}
+.phone.se{border-radius:38px;padding:26px 12px}
+
+/* screen */
+.screen{position:relative;background:#fff;border-radius:34px;overflow:hidden;-webkit-app-region:no-drag;
+ display:flex;flex-direction:column;transition:border-radius .2s;box-shadow:0 0 1px rgba(0,0,0,.2) inset}
+.screen.full{display:block}
+
+/* status bar */
+.statusbar{position:relative;width:100%;display:flex;align-items:center;justify-content:space-between;padding:0 14px;
+ color:#1a1a1a;font-size:12px;font-weight:600;z-index:10;pointer-events:none;user-select:none;flex:none;
+ background:#fff;border-bottom:1px solid rgba(0,0,0,.04);box-sizing:border-box}
+.screen.full .statusbar{position:absolute;top:0;left:0;background:transparent;border-bottom:none;text-shadow:0 1px 2px rgba(255,255,255,.8)}
+.sb-time{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:12px;font-weight:600;letter-spacing:-.2px;min-width:40px}
+.sb-center{display:flex;align-items:center;justify-content:center;flex:1}
+.sb-icons{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600}
+.sb-icon{width:13px;height:13px;fill:currentColor}
+
+/* camera cutouts */
+.cutout-island{width:86px;height:24px;background:#000;border-radius:20px;box-shadow:0 0 1px rgba(255,255,255,.2) inset,0 1px 3px rgba(0,0,0,.3);
+ display:flex;align-items:center;justify-content:flex-end;padding-right:8px;box-sizing:border-box}
+.cutout-island::after{content:'';width:9px;height:9px;background:#111;border:1.5px solid #1f2533;border-radius:50%}
+.cutout-punch{width:12px;height:12px;background:#000;border:1.5px solid #222938;border-radius:50%;box-shadow:0 0 2px rgba(0,0,0,.5);box-sizing:border-box}
+.cutout-none{display:none !important}
+
+/* content container */
+.screen-content{position:relative;flex:1;width:100%;height:100%;overflow:hidden}
+.screen.full .screen-content{position:absolute;inset:0}
+
+/* webview */
+webview{position:absolute;inset:0;width:100%;height:100%;visibility:hidden}
+webview.on{visibility:visible}
+
+/* home indicator */
+.home-indicator{width:100%;height:14px;display:flex;align-items:center;justify-content:center;background:#fff;flex:none;pointer-events:none;z-index:10}
+.screen.full .home-indicator{position:absolute;bottom:0;left:0;background:transparent}
+.home-bar{width:115px;height:4px;background:rgba(0,0,0,.25);border-radius:4px}
+.phone.tablet .home-indicator,.phone.se .home-indicator{display:none}
+
+/* err & empty view */
+.err-view{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center;color:var(--mute);background:#fff;z-index:4}
+.err-view b{color:var(--txt);font-size:15px}
+.empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--mute);font-size:14px;text-align:center;padding:20px}
+.empty input{width:80%}
+.side-btn{position:absolute;right:-3px;width:3px;background:#3a3f4b;border-radius:2px}
+
+/* toolbar */
+.tools{display:flex;flex-direction:column;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:8px 6px;
+ box-shadow:0 6px 20px rgba(30,40,70,.15);-webkit-app-region:drag;flex:none}
+.tools button{-webkit-app-region:no-drag;width:38px;height:38px;border:none;border-radius:12px;background:transparent;font-size:17px;cursor:pointer;color:var(--txt);transition:.15s}
+.tools button:hover{background:var(--acc2);color:var(--acc)}
+.tools button.act{background:var(--acc);color:#fff}
+.tools hr{border:none;border-top:1px solid var(--line);margin:2px 4px}
+.tools .x:hover{background:#ffe5e5;color:#e04848}
+
+/* panel */
+.panel{direction:rtl;width:260px;flex:none;align-self:center;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;
+ box-shadow:0 6px 20px rgba(30,40,70,.15);display:none;flex-direction:column;gap:13px;max-height:100%;overflow-y:auto}
+.panel::-webkit-scrollbar{width:4px}
+.panel::-webkit-scrollbar-thumb{background:#d5dae2;border-radius:4px}
+.panel.open{display:flex}
+.panel h2{font-size:15px}
+label{font-size:12px;color:var(--mute);display:block;margin-bottom:5px}
+input,select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:13px;background:#fafbfd;outline:none;-webkit-app-region:no-drag;user-select:text}
+input:focus,select:focus{border-color:var(--acc);background:#fff}
+.row{display:flex;gap:6px}
+.btn{font:inherit;font-size:13px;border:none;border-radius:10px;padding:8px 12px;cursor:pointer;background:var(--acc);color:#fff}
+.tabs{display:flex;flex-direction:column;gap:5px}
+.tab{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border:1px solid var(--line);border-radius:10px;cursor:pointer;font-size:13px}
+.tab.active{border-color:var(--acc);background:var(--acc2);color:var(--acc);font-weight:600}
+.tab b{font-weight:400;color:var(--mute);padding:0 5px;border-radius:5px}
+.tab b:hover{background:#ffe5e5;color:#e04848}
+.muted{font-size:12px;color:var(--mute);line-height:1.4}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="panel" id="panel">
+    <h2>الإعدادات</h2>
+    <div>
+      <label>إضافة منفذ</label>
+      <div class="row"><input id="portIn" dir="ltr" placeholder="3000"><button class="btn" id="addBtn">إضافة</button></div>
+    </div>
+    <div><label>المنافذ المفتوحة</label><div class="tabs" id="tabs"></div></div>
+    <div><label>نوع الجهاز</label><select id="device"></select></div>
+    <div>
+      <label>وضع الشاشة والكاميرا</label>
+      <select id="screenMode">
+        <option value="safe">إلى الجزيرة (المحتوى أسفل الكاميرا)</option>
+        <option value="full">من ضمن الجزيرة (شاشة كاملة ممتدة)</option>
+      </select>
+    </div>
+    <div class="muted">اسحب الجوال من إطاره لتحريكه • اسحب بالماوس للتمرير باللمس • Ctrl+Tab للتنقل بين المنافذ</div>
+  </div>
+  <div class="tools">
+    <button id="bPanel" title="الإعدادات والمنافذ">☰</button>
+    <button id="bMode" title="تبديل وضع الشاشة: إلى الجزيرة / شاشة كاملة">📱</button>
+    <button id="bNext" title="المنفذ التالي">⇄</button>
+    <button id="bReload" title="تحديث">⟳</button>
+    <button id="bBack" title="رجوع">‹</button>
+    <button id="bRotate" title="تدوير">⤾</button>
+    <button id="bDev" title="أدوات المطور">⚙</button>
+    <button id="bExt" title="فتح في المتصفح">↗</button>
+    <hr>
+    <button id="bPin" title="تثبيت فوق النوافذ">📌</button>
+    <button id="bMin" title="تصغير">–</button>
+    <button id="bClose" class="x" title="إغلاق">✕</button>
+  </div>
+  <div class="phone" id="phone">
+    <div class="screen" id="screen">
+      <!-- Status bar -->
+      <div class="statusbar" id="statusbar">
+        <div class="sb-time" id="sbTime">12:00</div>
+        <div class="sb-center"><div id="sbCutout" class="cutout-island"></div></div>
+        <div class="sb-icons">
+          <span>5G</span>
+          <svg class="sb-icon" viewBox="0 0 24 24"><path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98A16.88 16.88 0 0 0 12 4z"/></svg>
+          <span>98%</span>
+        </div>
+      </div>
+      <!-- Web content container -->
+      <div class="screen-content" id="screenContent"></div>
+      <!-- Home indicator -->
+      <div class="home-indicator" id="homeBar"><div class="home-bar"></div></div>
+    </div>
+  </div>
+</div>
+<script>
+const IOS='Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
+const IPAD='Mozilla/5.0 (iPad; CPU OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
+const AND=m=>`Mozilla/5.0 (Linux; Android 14; ${m}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36`;
+
+const devices={
+  "iPhone 15 Pro":{w:393,h:852,ua:IOS,cutout:'island',statusH:42,round:36},
+  "iPhone 15 Pro Max":{w:430,h:932,ua:IOS,cutout:'island',statusH:44,round:38},
+  "iPhone SE":{w:375,h:667,ua:IOS,cutout:'none',statusH:22,round:12,se:true},
+  "Galaxy S24":{w:360,h:780,ua:AND('SM-S921B'),cutout:'punch',statusH:32,round:32},
+  "Galaxy S24 Ultra":{w:384,h:824,ua:AND('SM-S928B'),cutout:'punch',statusH:32,round:20},
+  "Pixel 8":{w:412,h:915,ua:AND('Pixel 8'),cutout:'punch',statusH:34,round:34},
+  "Galaxy Fold (مفتوح)":{w:673,h:841,ua:AND('SM-F946B'),cutout:'punch',statusH:30,round:20},
+  "iPad Mini":{w:768,h:1024,ua:IPAD,cutout:'none',statusH:24,round:16,tablet:true},
+  "iPad Pro 11":{w:834,h:1194,ua:IPAD,cutout:'none',statusH:24,round:16,tablet:true}
+};
+
+const $=id=>document.getElementById(id);
+const S=JSON.parse(localStorage.getItem('emu')||'{}');
+const st={
+  tabs:S.tabs||[],
+  active:S.active||0,
+  device:devices[S.device]?S.device:'iPhone 15 Pro',
+  screenMode:S.screenMode||'safe',
+  land:!!S.land,
+  pin:S.pin??true,
+  panel:false
+};
+const save=()=>localStorage.setItem('emu',JSON.stringify(st));
+const views={};let scale=1;
+for(const d in devices)$('device').add(new Option(d,d));
+
+function updateClock(){
+  const now=new Date();
+  const h=now.getHours();
+  const m=String(now.getMinutes()).padStart(2,'0');
+  $('sbTime').textContent=`${h}:${m}`;
+}
+setInterval(updateClock,1000);
+updateClock();
+
+function norm(v){
+  v=v.replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).trim();
+  if(!v)return null;
+  if(/^\d+$/.test(v))return'http://localhost:'+v;
+  if(/^:\d+/.test(v))return'http://localhost'+v;
+  if(!/^https?:\/\//.test(v))return'http://'+v;
+  return v;
+}
+function addPort(v){
+  const u=norm(v);
+  if(!u)return;
+  if(!st.tabs.includes(u))st.tabs.push(u);
+  st.active=st.tabs.indexOf(u);
+  render();
+}
+const cur=()=>views[st.tabs[st.active]];
+
+async function layout(){
+  const d=devices[st.device];let w=d.w,h=d.h;
+  if(st.land)[w,h]=[h,w];
+  const extraW=24+16+52+8+(st.panel?268:0), extraH=24+16;
+  scale=await window.api.fit({w,h,extraW,extraH});
+  
+  const sc=$('screen');
+  sc.style.width=Math.round(w*scale)+'px';
+  sc.style.height=Math.round(h*scale)+'px';
+  sc.style.borderRadius=Math.round(d.round*scale)+'px';
+  
+  const ph=$('phone');
+  ph.classList.toggle('tablet',!!d.tablet);
+  ph.classList.toggle('se',!!d.se);
+  ph.classList.toggle('land',st.land);
+  
+  const sb=$('statusbar');
+  sb.style.height=Math.round(d.statusH*scale)+'px';
+  $('sbCutout').className='cutout-'+(st.land?'none':d.cutout);
+
+  for(const k in views){
+    views[k].setAttribute('useragent',d.ua);
+    try{views[k].setZoomFactor(scale)}catch{}
+  }
+}
+
+function renderTabs(){
+  const t=$('tabs');t.innerHTML='';
+  if(!st.tabs.length)t.innerHTML='<div class="muted">لا توجد منافذ</div>';
+  st.tabs.forEach((u,i)=>{
+    const e=document.createElement('div');
+    e.className='tab'+(i===st.active?' active':'');
+    e.innerHTML=`<span dir="ltr">${u.replace(/^https?:\/\//,'')}</span><b>✕</b>`;
+    e.onclick=ev=>{
+      if(ev.target.tagName==='B'){
+        st.tabs.splice(i,1);
+        if(st.active>=st.tabs.length)st.active=Math.max(0,st.tabs.length-1);
+      }else{
+        st.active=i;
+      }
+      render();
+    };
+    t.appendChild(e);
+  });
+}
+
+function injectMobileBehaviors(v){
+  // 1. Remove bulky scrollbars
+  v.insertCSS(`
+    ::-webkit-scrollbar { width: 0px !important; height: 0px !important; display: none !important; }
+    * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+    html, body { -webkit-overflow-scrolling: touch !important; }
+  `);
+
+  // 2. Touch drag-to-scroll simulation
+  v.executeJavaScript(`
+    (function(){
+      if(window.__simTouchInit)return;
+      window.__simTouchInit=true;
+      let isDown=false,hasDragged=false,startX=0,startY=0,scrollStartX=0,scrollStartY=0,target=null;
+      function findScrollable(el){
+        let node=el;
+        while(node&&node!==document.documentElement&&node!==document.body){
+          const cs=window.getComputedStyle(node);
+          if((cs.overflowY==='auto'||cs.overflowY==='scroll')&&node.scrollHeight>node.clientHeight)return node;
+          node=node.parentElement;
+        }
+        return document.scrollingElement||document.documentElement||document.body;
+      }
+      window.addEventListener('mousedown',function(e){
+        if(e.button!==0)return;
+        const tag=(e.target.tagName||'').toUpperCase();
+        if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||e.target.isContentEditable)return;
+        isDown=true;hasDragged=false;
+        startX=e.clientX;startY=e.clientY;
+        target=findScrollable(e.target);
+        scrollStartX=(target===document.body||target===document.documentElement)?window.scrollX:target.scrollLeft;
+        scrollStartY=(target===document.body||target===document.documentElement)?window.scrollY:target.scrollTop;
+      },true);
+      window.addEventListener('mousemove',function(e){
+        if(!isDown)return;
+        const dx=e.clientX-startX;const dy=e.clientY-startY;
+        if(!hasDragged&&(Math.abs(dx)>4||Math.abs(dy)>4))hasDragged=true;
+        if(hasDragged){
+          if(target===document.body||target===document.documentElement){
+            window.scrollTo(scrollStartX-dx,scrollStartY-dy);
+          }else if(target){
+            target.scrollLeft=scrollStartX-dx;
+            target.scrollTop=scrollStartY-dy;
+          }
+        }
+      },true);
+      window.addEventListener('click',function(e){
+        if(hasDragged){e.preventDefault();e.stopPropagation();hasDragged=false;}
+      },true);
+      window.addEventListener('mouseup',function(){isDown=false;},true);
+    })();
+  `);
+}
+
+function render(){
+  save();
+  renderTabs();
+  $('device').value=st.device;
+  $('screenMode').value=st.screenMode;
+  $('bPanel').classList.toggle('act',st.panel);
+  $('bPin').classList.toggle('act',st.pin);
+  $('bMode').classList.toggle('act',st.screenMode==='full');
+  $('panel').classList.toggle('open',st.panel);
+  
+  const sc=$('screen');
+  sc.classList.toggle('full',st.screenMode==='full');
+  
+  const scContent=$('screenContent');
+  for(const k in views){
+    if(!st.tabs.includes(k)){
+      views[k].remove();
+      delete views[k];
+    }
+  }
+  
+  scContent.querySelector('.empty')?.remove();
+  if(!st.tabs.length){
+    const e=document.createElement('div');
+    e.className='empty';
+    e.innerHTML='<div style="font-size:34px">📱</div><div>اكتب رقم المنفذ</div><input id="q" dir="ltr" placeholder="3000"><button class="btn">فتح</button>';
+    scContent.appendChild(e);
+    const q=e.querySelector('input');
+    e.querySelector('button').onclick=()=>addPort(q.value);
+    q.onkeydown=ev=>{if(ev.key==='Enter')addPort(q.value);};
+    setTimeout(()=>(st.panel?$('portIn'):q).focus(),50);
+  }
+
+  st.tabs.forEach((u,i)=>{
+    if(!views[u]){
+      const v=document.createElement('webview');
+      v.setAttribute('useragent',devices[st.device].ua);
+      v.src=u;
+      v.addEventListener('dom-ready',()=>{
+        try{v.setZoomFactor(scale)}catch{}
+        injectMobileBehaviors(v);
+      });
+      v.addEventListener('did-fail-load',ev=>{
+        if(ev.errorCode===-3)return;
+        const oldErr=scContent.querySelector('.err-'+i);if(oldErr)oldErr.remove();
+        const errDiv=document.createElement('div');
+        errDiv.className='err-view err-'+i;
+        errDiv.innerHTML=`<div style="font-size:36px">⚠️</div><b>تعذر الاتصال بالمنفذ</b><div>${u}</div><div class="muted">${ev.errorDescription||'تأكد من تشغيل السيرفر ورقم المنفذ'}</div><button class="btn" style="margin-top:10px">إعادة المحاولة</button>`;
+        errDiv.querySelector('button').onclick=()=>{errDiv.remove();v.reload();};
+        scContent.appendChild(errDiv);
+      });
+      v.addEventListener('did-start-loading',()=>{
+        const oldErr=scContent.querySelector('.err-'+i);if(oldErr)oldErr.remove();
+      });
+      scContent.appendChild(v);
+      views[u]=v;
+    }
+    views[u].classList.toggle('on',i===st.active);
+    const tabErr=scContent.querySelector('.err-'+i);
+    if(tabErr)tabErr.style.display=(i===st.active?'flex':'none');
+  });
+
+  layout();
+}
+
+$('addBtn').onclick=()=>{addPort($('portIn').value);$('portIn').value=''};
+$('portIn').onkeydown=e=>{if(e.key==='Enter')$('addBtn').click()};
+$('device').onchange=e=>{st.device=e.target.value;render();for(const k in views)views[k].reload()};
+$('screenMode').onchange=e=>{st.screenMode=e.target.value;render()};
+$('bMode').onclick=()=>{st.screenMode=(st.screenMode==='safe'?'full':'safe');render()};
+$('bPanel').onclick=()=>{st.panel=!st.panel;render();if(st.panel)setTimeout(()=>$('portIn').focus(),50)};
+$('bNext').onclick=()=>{if(st.tabs.length){st.active=(st.active+1)%st.tabs.length;render()}};
+$('bReload').onclick=()=>cur()?.reload();
+$('bBack').onclick=()=>{const v=cur();if(v?.canGoBack())v.goBack()};
+$('bRotate').onclick=()=>{st.land=!st.land;render()};
+$('bDev').onclick=()=>{const v=cur();if(v)v.isDevToolsOpened()?v.closeDevTools():v.openDevTools()};
+$('bExt').onclick=()=>{const u=st.tabs[st.active];if(u)window.api.ext(u)};
+$('bPin').onclick=()=>{st.pin=!st.pin;window.api.pin(st.pin);render()};
+$('bMin').onclick=()=>window.api.min();
+$('bClose').onclick=()=>window.api.close();
+document.addEventListener('keydown',e=>{if(e.ctrlKey&&e.key==='Tab')$('bNext').click();if(e.key==='F5')$('bReload').click()});
+
+window.api.pin(st.pin);
+render();
+</script>
+</body>
+</html>
