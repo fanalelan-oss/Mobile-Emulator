@@ -1,6 +1,6 @@
 {
   "name": "mobile-emulator",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "محاكي جوال تفاعلي خفيف لمعاينة المنافذ المحلية وتطوير الويب المتجاوب",
   "main": "main.js",
   "author": "Fan Alelan <fanalelan@gmail.com>",
