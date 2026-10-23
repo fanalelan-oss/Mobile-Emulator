@@ -55,7 +55,7 @@ webview.on{visibility:visible}
 .err-view{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center;color:var(--mute);background:#fff;z-index:4}
 .err-view b{color:var(--txt);font-size:15px}
 .empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--mute);font-size:14px;text-align:center;padding:20px}
-.empty input{width:80%}
+.empty input{width:85%}
 .side-btn{position:absolute;right:-3px;width:3px;background:#3a3f4b;border-radius:2px}
 
 /* toolbar */
@@ -68,7 +68,7 @@ webview.on{visibility:visible}
 .tools .x:hover{background:#ffe5e5;color:#e04848}
 
 /* panel */
-.panel{direction:rtl;width:260px;flex:none;align-self:center;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;
+.panel{direction:rtl;width:270px;flex:none;align-self:center;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;
  box-shadow:0 6px 20px rgba(30,40,70,.15);display:none;flex-direction:column;gap:13px;max-height:100%;overflow-y:auto}
 .panel::-webkit-scrollbar{width:4px}
 .panel::-webkit-scrollbar-thumb{background:#d5dae2;border-radius:4px}
@@ -78,10 +78,11 @@ label{font-size:12px;color:var(--mute);display:block;margin-bottom:5px}
 input,select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:13px;background:#fafbfd;outline:none;-webkit-app-region:no-drag;user-select:text}
 input:focus,select:focus{border-color:var(--acc);background:#fff}
 .row{display:flex;gap:6px}
-.btn{font:inherit;font-size:13px;border:none;border-radius:10px;padding:8px 12px;cursor:pointer;background:var(--acc);color:#fff}
+.btn{font:inherit;font-size:13px;border:none;border-radius:10px;padding:8px 12px;cursor:pointer;background:var(--acc);color:#fff;white-space:nowrap}
 .tabs{display:flex;flex-direction:column;gap:5px}
 .tab{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border:1px solid var(--line);border-radius:10px;cursor:pointer;font-size:13px}
 .tab.active{border-color:var(--acc);background:var(--acc2);color:var(--acc);font-weight:600}
+.tab span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px}
 .tab b{font-weight:400;color:var(--mute);padding:0 5px;border-radius:5px}
 .tab b:hover{background:#ffe5e5;color:#e04848}
 .muted{font-size:12px;color:var(--mute);line-height:1.4}
@@ -92,10 +93,13 @@ input:focus,select:focus{border-color:var(--acc);background:#fff}
   <div class="panel" id="panel">
     <h2>الإعدادات</h2>
     <div>
-      <label>إضافة منفذ</label>
-      <div class="row"><input id="portIn" dir="ltr" placeholder="3000"><button class="btn" id="addBtn">إضافة</button></div>
+      <label>إضافة منفذ أو رابط موقع</label>
+      <div class="row">
+        <input id="portIn" dir="ltr" placeholder="3000 أو example.com">
+        <button class="btn" id="addBtn">فتح</button>
+      </div>
     </div>
-    <div><label>المنافذ المفتوحة</label><div class="tabs" id="tabs"></div></div>
+    <div><label>المواقع والمنافذ المفتوحة</label><div class="tabs" id="tabs"></div></div>
     <div><label>نوع الجهاز</label><select id="device"></select></div>
     <div>
       <label>وضع الشاشة والكاميرا</label>
@@ -104,17 +108,18 @@ input:focus,select:focus{border-color:var(--acc);background:#fff}
         <option value="full">من ضمن الجزيرة (شاشة كاملة ممتدة)</option>
       </select>
     </div>
-    <div class="muted">اسحب الجوال من إطاره لتحريكه • اسحب بالماوس للتمرير باللمس • Ctrl+Tab للتنقل بين المنافذ</div>
+    <div class="muted">اسحب الجوال من إطاره لتحريكه • اسحب بالماوس للتمرير باللمس • Ctrl+Tab للتنقل السريع</div>
   </div>
   <div class="tools">
     <button id="bPanel" title="الإعدادات والمنافذ">☰</button>
     <button id="bMode" title="تبديل وضع الشاشة: إلى الجزيرة / شاشة كاملة">📱</button>
-    <button id="bNext" title="المنفذ التالي">⇄</button>
-    <button id="bReload" title="تحديث">⟳</button>
-    <button id="bBack" title="رجوع">‹</button>
+    <button id="bNext" title="الموقع أو المنفذ التالي">⇄</button>
+    <button id="bReload" title="تحديث (F5)">⟳</button>
+    <button id="bBack" title="رجوع (Alt+Left)">‹</button>
+    <button id="bForward" title="تقدم (Alt+Right)">›</button>
     <button id="bRotate" title="تدوير">⤾</button>
     <button id="bDev" title="أدوات المطور">⚙</button>
-    <button id="bExt" title="فتح في المتصفح">↗</button>
+    <button id="bExt" title="فتح في المتصفح الخارجي">↗</button>
     <hr>
     <button id="bPin" title="تثبيت فوق النوافذ">📌</button>
     <button id="bMin" title="تصغير">–</button>
@@ -180,14 +185,25 @@ function updateClock(){
 setInterval(updateClock,1000);
 updateClock();
 
+// Ultra-fast, zero-dependency smart input normalizer
 function norm(v){
+  if(!v)return null;
   v=v.replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).trim();
   if(!v)return null;
-  if(/^\d+$/.test(v))return'http://localhost:'+v;
-  if(/^:\d+/.test(v))return'http://localhost'+v;
-  if(!/^https?:\/\//.test(v))return'http://'+v;
-  return v;
+  // numeric port (e.g. 3000, 5173, 8080)
+  if(/^\d+$/.test(v))return 'http://localhost:'+v;
+  // colon port (e.g. :3000)
+  if(/^:\d+/.test(v))return 'http://localhost'+v;
+  // already has protocol
+  if(/^https?:\/\//i.test(v))return v;
+  // local addresses
+  if(/^(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?(\/.*)?$/i.test(v))return 'http://'+v;
+  // external domain (contains dot like google.com, example.org, site.surge.sh)
+  if(v.includes('.'))return 'https://'+v;
+  // fallback to localhost port
+  return 'http://localhost:'+v;
 }
+
 function addPort(v){
   const u=norm(v);
   if(!u)return;
@@ -200,7 +216,7 @@ const cur=()=>views[st.tabs[st.active]];
 async function layout(){
   const d=devices[st.device];let w=d.w,h=d.h;
   if(st.land)[w,h]=[h,w];
-  const extraW=24+16+52+8+(st.panel?268:0), extraH=24+16;
+  const extraW=24+16+52+8+(st.panel?278:0), extraH=24+16;
   scale=await window.api.fit({w,h,extraW,extraH});
   
   const sc=$('screen');
@@ -225,11 +241,12 @@ async function layout(){
 
 function renderTabs(){
   const t=$('tabs');t.innerHTML='';
-  if(!st.tabs.length)t.innerHTML='<div class="muted">لا توجد منافذ</div>';
+  if(!st.tabs.length)t.innerHTML='<div class="muted">لا توجد مواقع أو منافذ مفتوحة</div>';
   st.tabs.forEach((u,i)=>{
     const e=document.createElement('div');
     e.className='tab'+(i===st.active?' active':'');
-    e.innerHTML=`<span dir="ltr">${u.replace(/^https?:\/\//,'')}</span><b>✕</b>`;
+    const displayUrl=u.replace(/^https?:\/\//i,'').replace(/\/$/,'');
+    e.innerHTML=`<span dir="ltr" title="${u}">${displayUrl}</span><b>✕</b>`;
     e.onclick=ev=>{
       if(ev.target.tagName==='B'){
         st.tabs.splice(i,1);
@@ -244,14 +261,14 @@ function renderTabs(){
 }
 
 function injectMobileBehaviors(v){
-  // 1. Remove bulky scrollbars
+  // 1. Sleek zero-overhead scrollbar removal
   v.insertCSS(`
     ::-webkit-scrollbar { width: 0px !important; height: 0px !important; display: none !important; }
     * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
     html, body { -webkit-overflow-scrolling: touch !important; }
   `);
 
-  // 2. Touch drag-to-scroll simulation
+  // 2. High-performance touch drag-to-scroll simulation
   v.executeJavaScript(`
     (function(){
       if(window.__simTouchInit)return;
@@ -322,7 +339,7 @@ function render(){
   if(!st.tabs.length){
     const e=document.createElement('div');
     e.className='empty';
-    e.innerHTML='<div style="font-size:34px">📱</div><div>اكتب رقم المنفذ</div><input id="q" dir="ltr" placeholder="3000"><button class="btn">فتح</button>';
+    e.innerHTML='<div style="font-size:34px">📱</div><div>اكتب رقم المنفذ أو رابط الموقع</div><input id="q" dir="ltr" placeholder="3000 أو example.com"><button class="btn">فتح</button>';
     scContent.appendChild(e);
     const q=e.querySelector('input');
     e.querySelector('button').onclick=()=>addPort(q.value);
@@ -340,11 +357,11 @@ function render(){
         injectMobileBehaviors(v);
       });
       v.addEventListener('did-fail-load',ev=>{
-        if(ev.errorCode===-3)return;
+        if(ev.errorCode===-3)return; // ignore redirected/aborted
         const oldErr=scContent.querySelector('.err-'+i);if(oldErr)oldErr.remove();
         const errDiv=document.createElement('div');
         errDiv.className='err-view err-'+i;
-        errDiv.innerHTML=`<div style="font-size:36px">⚠️</div><b>تعذر الاتصال بالمنفذ</b><div>${u}</div><div class="muted">${ev.errorDescription||'تأكد من تشغيل السيرفر ورقم المنفذ'}</div><button class="btn" style="margin-top:10px">إعادة المحاولة</button>`;
+        errDiv.innerHTML=`<div style="font-size:36px">⚠️</div><b>تعذر فتح الرابط أو المنفذ</b><div>${u}</div><div class="muted">${ev.errorDescription||'تأكد من تشغيل السيرفر أو الاتصال بالإنترنت'}</div><button class="btn" style="margin-top:10px">إعادة المحاولة</button>`;
         errDiv.querySelector('button').onclick=()=>{errDiv.remove();v.reload();};
         scContent.appendChild(errDiv);
       });
@@ -371,13 +388,20 @@ $('bPanel').onclick=()=>{st.panel=!st.panel;render();if(st.panel)setTimeout(()=>
 $('bNext').onclick=()=>{if(st.tabs.length){st.active=(st.active+1)%st.tabs.length;render()}};
 $('bReload').onclick=()=>cur()?.reload();
 $('bBack').onclick=()=>{const v=cur();if(v?.canGoBack())v.goBack()};
+$('bForward').onclick=()=>{const v=cur();if(v?.canGoForward())v.goForward()};
 $('bRotate').onclick=()=>{st.land=!st.land;render()};
 $('bDev').onclick=()=>{const v=cur();if(v)v.isDevToolsOpened()?v.closeDevTools():v.openDevTools()};
 $('bExt').onclick=()=>{const u=st.tabs[st.active];if(u)window.api.ext(u)};
 $('bPin').onclick=()=>{st.pin=!st.pin;window.api.pin(st.pin);render()};
 $('bMin').onclick=()=>window.api.min();
 $('bClose').onclick=()=>window.api.close();
-document.addEventListener('keydown',e=>{if(e.ctrlKey&&e.key==='Tab')$('bNext').click();if(e.key==='F5')$('bReload').click()});
+
+document.addEventListener('keydown',e=>{
+  if(e.ctrlKey&&e.key==='Tab')$('bNext').click();
+  if(e.key==='F5')$('bReload').click();
+  if(e.altKey&&e.key==='ArrowLeft')$('bBack').click();
+  if(e.altKey&&e.key==='ArrowRight')$('bForward').click();
+});
 
 window.api.pin(st.pin);
 render();
