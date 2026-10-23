@@ -1,10 +1,18 @@
-const { app, BrowserWindow, ipcMain, screen, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, shell, clipboard, session } = require('electron');
 
 app.commandLine.appendSwitch('enable-features', 'OverlayScrollbar');
 app.commandLine.appendSwitch('touch-events', 'enabled');
+app.commandLine.appendSwitch('use-fake-device-for-media-stream');
+app.commandLine.appendSwitch('use-fake-ui-for-media-stream');
 
 let win;
 app.whenReady().then(() => {
+  // Auto-grant mobile web permissions (Camera, Mic, Geolocation, Notifications, Clipboard)
+  session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
+    callback(true);
+  });
+  session.defaultSession.setPermissionCheckHandler(() => true);
+
   win = new BrowserWindow({
     width: 480, height: 900,
     frame: false, transparent: true, resizable: false,
@@ -30,6 +38,20 @@ ipcMain.handle('fit', (_e, { w, h, extraW, extraH }) => {
   win.setResizable(false);
   return scale;
 });
+
+// Native ultra-fast screen capture directly to clipboard
+ipcMain.handle('capture', async (_e, rect) => {
+  if (!win) return false;
+  try {
+    const img = await win.capturePage(rect);
+    clipboard.writeImage(img);
+    return true;
+  } catch (err) {
+    console.error('Capture error:', err);
+    return false;
+  }
+});
+
 ipcMain.on('pin', (_e, v) => win.setAlwaysOnTop(v));
 ipcMain.on('min', () => win.minimize());
 ipcMain.on('close', () => app.quit());

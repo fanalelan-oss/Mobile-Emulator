@@ -58,6 +58,16 @@ webview.on{visibility:visible}
 .empty input{width:85%}
 .side-btn{position:absolute;right:-3px;width:3px;background:#3a3f4b;border-radius:2px}
 
+/* shutter flash animation */
+.shutter-flash{position:absolute;inset:0;background:#fff;z-index:999;pointer-events:none;animation:flash .22s ease-out forwards}
+@keyframes flash{0%{opacity:.85}100%{opacity:0}}
+
+/* toast message */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(25px);background:rgba(28,31,38,.92);color:#fff;
+ padding:8px 16px;border-radius:20px;font-size:12px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,.25);pointer-events:none;
+ opacity:0;transition:transform .2s ease-out,opacity .2s ease-out;z-index:1000;direction:rtl;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
 /* toolbar */
 .tools{display:flex;flex-direction:column;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:8px 6px;
  box-shadow:0 6px 20px rgba(30,40,70,.15);-webkit-app-region:drag;flex:none}
@@ -108,11 +118,25 @@ input:focus,select:focus{border-color:var(--acc);background:#fff}
         <option value="full">من ضمن الجزيرة (شاشة كاملة ممتدة)</option>
       </select>
     </div>
-    <div class="muted">اسحب الجوال من إطاره لتحريكه • اسحب بالماوس للتمرير باللمس • Ctrl+Tab للتنقل السريع</div>
+    <div>
+      <label>محاكاة الموقع الجغرافي (GPS)</label>
+      <select id="locationSelect">
+        <option value="24.7136,46.6753">الرياض (السعودية)</option>
+        <option value="15.3694,44.1910">صنعاء (اليمن)</option>
+        <option value="25.2048,55.2708">دبي (الإمارات)</option>
+        <option value="30.0444,31.2357">القاهرة (مصر)</option>
+        <option value="21.3891,39.8579">مكة المكرمة</option>
+        <option value="21.5433,39.1728">جدة (السعودية)</option>
+        <option value="29.3759,47.9774">الكويت</option>
+        <option value="25.2854,51.5310">الدوحة (قطر)</option>
+      </select>
+    </div>
+    <div class="muted">اسحب الجوال لتحريكه • اسحب بالماوس للتمرير • زر 📸 لنسخ الشاشة للحافظة • Ctrl+Tab للتنقل</div>
   </div>
   <div class="tools">
     <button id="bPanel" title="الإعدادات والمنافذ">☰</button>
     <button id="bMode" title="تبديل وضع الشاشة: إلى الجزيرة / شاشة كاملة">📱</button>
+    <button id="bShot" title="لقطة شاشة ونسخ للحافظة (Ctrl+P / 📸)">📸</button>
     <button id="bNext" title="الموقع أو المنفذ التالي">⇄</button>
     <button id="bReload" title="تحديث (F5)">⟳</button>
     <button id="bBack" title="رجوع (Alt+Left)">‹</button>
@@ -168,6 +192,7 @@ const st={
   active:S.active||0,
   device:devices[S.device]?S.device:'iPhone 15 Pro',
   screenMode:S.screenMode||'safe',
+  location:S.location||'24.7136,46.6753',
   land:!!S.land,
   pin:S.pin??true,
   panel:false
@@ -175,6 +200,19 @@ const st={
 const save=()=>localStorage.setItem('emu',JSON.stringify(st));
 const views={};let scale=1;
 for(const d in devices)$('device').add(new Option(d,d));
+
+function showToast(msg){
+  let t=document.querySelector('.toast');
+  if(!t){
+    t=document.createElement('div');
+    t.className='toast';
+    document.body.appendChild(t);
+  }
+  t.textContent=msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>t.classList.remove('show'),2200);
+}
 
 function updateClock(){
   const now=new Date();
@@ -190,17 +228,11 @@ function norm(v){
   if(!v)return null;
   v=v.replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).trim();
   if(!v)return null;
-  // numeric port (e.g. 3000, 5173, 8080)
   if(/^\d+$/.test(v))return 'http://localhost:'+v;
-  // colon port (e.g. :3000)
   if(/^:\d+/.test(v))return 'http://localhost'+v;
-  // already has protocol
   if(/^https?:\/\//i.test(v))return v;
-  // local addresses
   if(/^(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?(\/.*)?$/i.test(v))return 'http://'+v;
-  // external domain (contains dot like google.com, example.org, site.surge.sh)
   if(v.includes('.'))return 'https://'+v;
-  // fallback to localhost port
   return 'http://localhost:'+v;
 }
 
@@ -268,48 +300,76 @@ function injectMobileBehaviors(v){
     html, body { -webkit-overflow-scrolling: touch !important; }
   `);
 
-  // 2. High-performance touch drag-to-scroll simulation
+  // 2. High-performance touch drag-to-scroll & Sensors Mocking
+  const [lat, lng] = (st.location || '24.7136,46.6753').split(',').map(Number);
   v.executeJavaScript(`
     (function(){
-      if(window.__simTouchInit)return;
-      window.__simTouchInit=true;
-      let isDown=false,hasDragged=false,startX=0,startY=0,scrollStartX=0,scrollStartY=0,target=null;
-      function findScrollable(el){
-        let node=el;
-        while(node&&node!==document.documentElement&&node!==document.body){
-          const cs=window.getComputedStyle(node);
-          if((cs.overflowY==='auto'||cs.overflowY==='scroll')&&node.scrollHeight>node.clientHeight)return node;
-          node=node.parentElement;
-        }
-        return document.scrollingElement||document.documentElement||document.body;
-      }
-      window.addEventListener('mousedown',function(e){
-        if(e.button!==0)return;
-        const tag=(e.target.tagName||'').toUpperCase();
-        if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||e.target.isContentEditable)return;
-        isDown=true;hasDragged=false;
-        startX=e.clientX;startY=e.clientY;
-        target=findScrollable(e.target);
-        scrollStartX=(target===document.body||target===document.documentElement)?window.scrollX:target.scrollLeft;
-        scrollStartY=(target===document.body||target===document.documentElement)?window.scrollY:target.scrollTop;
-      },true);
-      window.addEventListener('mousemove',function(e){
-        if(!isDown)return;
-        const dx=e.clientX-startX;const dy=e.clientY-startY;
-        if(!hasDragged&&(Math.abs(dx)>4||Math.abs(dy)>4))hasDragged=true;
-        if(hasDragged){
-          if(target===document.body||target===document.documentElement){
-            window.scrollTo(scrollStartX-dx,scrollStartY-dy);
-          }else if(target){
-            target.scrollLeft=scrollStartX-dx;
-            target.scrollTop=scrollStartY-dy;
+      // Touch simulation
+      if(!window.__simTouchInit){
+        window.__simTouchInit=true;
+        let isDown=false,hasDragged=false,startX=0,startY=0,scrollStartX=0,scrollStartY=0,target=null;
+        function findScrollable(el){
+          let node=el;
+          while(node&&node!==document.documentElement&&node!==document.body){
+            const cs=window.getComputedStyle(node);
+            if((cs.overflowY==='auto'||cs.overflowY==='scroll')&&node.scrollHeight>node.clientHeight)return node;
+            node=node.parentElement;
           }
+          return document.scrollingElement||document.documentElement||document.body;
         }
-      },true);
-      window.addEventListener('click',function(e){
-        if(hasDragged){e.preventDefault();e.stopPropagation();hasDragged=false;}
-      },true);
-      window.addEventListener('mouseup',function(){isDown=false;},true);
+        window.addEventListener('mousedown',function(e){
+          if(e.button!==0)return;
+          const tag=(e.target.tagName||'').toUpperCase();
+          if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||e.target.isContentEditable)return;
+          isDown=true;hasDragged=false;
+          startX=e.clientX;startY=e.clientY;
+          target=findScrollable(e.target);
+          scrollStartX=(target===document.body||target===document.documentElement)?window.scrollX:target.scrollLeft;
+          scrollStartY=(target===document.body||target===document.documentElement)?window.scrollY:target.scrollTop;
+        },true);
+        window.addEventListener('mousemove',function(e){
+          if(!isDown)return;
+          const dx=e.clientX-startX;const dy=e.clientY-startY;
+          if(!hasDragged&&(Math.abs(dx)>4||Math.abs(dy)>4))hasDragged=true;
+          if(hasDragged){
+            if(target===document.body||target===document.documentElement){
+              window.scrollTo(scrollStartX-dx,scrollStartY-dy);
+            }else if(target){
+              target.scrollLeft=scrollStartX-dx;
+              target.scrollTop=scrollStartY-dy;
+            }
+          }
+        },true);
+        window.addEventListener('click',function(e){
+          if(hasDragged){e.preventDefault();e.stopPropagation();hasDragged=false;}
+        },true);
+        window.addEventListener('mouseup',function(){isDown=false;},true);
+      }
+
+      // Mobile Device Sensors (Geolocation, 5G Network, Vibration)
+      if(!window.__simSensorsInit){
+        window.__simSensorsInit=true;
+        if(navigator.geolocation){
+          const mockPos={
+            coords:{
+              latitude:${lat},
+              longitude:${lng},
+              accuracy:12,
+              altitude:null,
+              altitudeAccuracy:null,
+              heading:null,
+              speed:null
+            },
+            timestamp:Date.now()
+          };
+          navigator.geolocation.getCurrentPosition=function(cb){if(cb)setTimeout(()=>cb(mockPos),10);};
+          navigator.geolocation.watchPosition=function(cb){if(cb)setTimeout(()=>cb(mockPos),10);return 1;};
+        }
+        if(!navigator.connection){
+          navigator.connection={effectiveType:'4g',rtt:40,downlink:15,saveData:false,type:'cellular'};
+        }
+        navigator.vibrate=navigator.vibrate||function(){return true;};
+      }
     })();
   `);
 }
@@ -319,6 +379,7 @@ function render(){
   renderTabs();
   $('device').value=st.device;
   $('screenMode').value=st.screenMode;
+  $('locationSelect').value=st.location;
   $('bPanel').classList.toggle('act',st.panel);
   $('bPin').classList.toggle('act',st.pin);
   $('bMode').classList.toggle('act',st.screenMode==='full');
@@ -379,10 +440,32 @@ function render(){
   layout();
 }
 
+// Screenshot capture to clipboard
+$('bShot').onclick=async()=>{
+  const sc=$('screen');
+  const flash=document.createElement('div');
+  flash.className='shutter-flash';
+  sc.appendChild(flash);
+  setTimeout(()=>flash.remove(),240);
+
+  const r=sc.getBoundingClientRect();
+  const rect={
+    x:Math.round(r.left),
+    y:Math.round(r.top),
+    width:Math.round(r.width),
+    height:Math.round(r.height)
+  };
+  const ok=await window.api.capture(rect);
+  if(ok){
+    showToast('تم نسخ لقطة الشاشة إلى الحافظة بنجاح 📋');
+  }
+};
+
 $('addBtn').onclick=()=>{addPort($('portIn').value);$('portIn').value=''};
 $('portIn').onkeydown=e=>{if(e.key==='Enter')$('addBtn').click()};
 $('device').onchange=e=>{st.device=e.target.value;render();for(const k in views)views[k].reload()};
 $('screenMode').onchange=e=>{st.screenMode=e.target.value;render()};
+$('locationSelect').onchange=e=>{st.location=e.target.value;render();for(const k in views)views[k].reload()};
 $('bMode').onclick=()=>{st.screenMode=(st.screenMode==='safe'?'full':'safe');render()};
 $('bPanel').onclick=()=>{st.panel=!st.panel;render();if(st.panel)setTimeout(()=>$('portIn').focus(),50)};
 $('bNext').onclick=()=>{if(st.tabs.length){st.active=(st.active+1)%st.tabs.length;render()}};
@@ -399,6 +482,10 @@ $('bClose').onclick=()=>window.api.close();
 document.addEventListener('keydown',e=>{
   if(e.ctrlKey&&e.key==='Tab')$('bNext').click();
   if(e.key==='F5')$('bReload').click();
+  if((e.ctrlKey&&e.key==='p')||(e.ctrlKey&&e.shiftKey&&e.key.toLowerCase()==='s')){
+    e.preventDefault();
+    $('bShot').click();
+  }
   if(e.altKey&&e.key==='ArrowLeft')$('bBack').click();
   if(e.altKey&&e.key==='ArrowRight')$('bForward').click();
 });

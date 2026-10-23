@@ -4,5 +4,6 @@ contextBridge.exposeInMainWorld('api', {
   pin: (v) => ipcRenderer.send('pin', v),
   min: () => ipcRenderer.send('min'),
   close: () => ipcRenderer.send('close'),
-  ext: (u) => ipcRenderer.send('ext', u)
+  ext: (u) => ipcRenderer.send('ext', u),
+  capture: (rect) => ipcRenderer.invoke('capture', rect)
 });
